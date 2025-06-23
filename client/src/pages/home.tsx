@@ -1,0 +1,152 @@
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Video, Crown, Globe, Users } from "lucide-react";
+import { Link } from "wouter";
+
+export default function Home() {
+  const { user } = useAuth();
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-purple-50 to-secondary/10">
+      {/* Navigation Header */}
+      <nav className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center">
+                <Video className="text-white" size={20} />
+              </div>
+              <h1 className="text-xl font-bold text-gray-900">ChatConnect</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              {user?.profileImageUrl && (
+                <img
+                  src={user.profileImageUrl}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              )}
+              <span className="text-gray-700">
+                مرحباً، {user?.firstName || user?.email}
+              </span>
+              <Button variant="outline" asChild>
+                <a href="/api/logout">تسجيل الخروج</a>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            مرحباً بك في ChatConnect
+          </h1>
+          <p className="text-xl text-gray-600">
+            ابدأ دردشة فيديو عشوائية مع أشخاص من حول العالم
+          </p>
+        </div>
+
+        {/* Action Cards */}
+        <div className="grid md:grid-cols-2 gap-8 mb-12">
+          {/* Start Chat Card */}
+          <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+            <CardHeader className="text-center">
+              <div className="w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Video className="text-white" size={40} />
+              </div>
+              <CardTitle className="text-2xl">ابدأ دردشة فيديو</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-gray-600 mb-6">
+                تواصل مع أشخاص عشوائيين من الدولة التي تختارها
+              </p>
+              <Button 
+                size="lg"
+                className="w-full bg-gradient-to-r from-primary to-secondary text-white"
+                asChild
+              >
+                <Link href="/video-chat">
+                  <Video className="mr-2" size={20} />
+                  ابدأ الآن
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Subscription Card */}
+          <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+            <CardHeader className="text-center">
+              <div className="w-20 h-20 bg-gradient-to-r from-secondary to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Crown className="text-white" size={40} />
+              </div>
+              <CardTitle className="text-2xl">
+                {user?.isSubscribed ? "العضوية المميزة" : "ترقية الحساب"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              {user?.isSubscribed ? (
+                <div>
+                  <p className="text-green-600 mb-6 font-semibold">
+                    ✅ أنت مشترك في العضوية المميزة
+                  </p>
+                  <div className="text-sm text-gray-600">
+                    <p>• جميع الدول متاحة</p>
+                    <p>• وقت غير محدود</p>
+                    <p>• بدون إعلانات</p>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-600 mb-6">
+                    احصل على مميزات إضافية مقابل $3 شهرياً
+                  </p>
+                  <Button 
+                    size="lg"
+                    variant="outline"
+                    className="w-full border-2 border-primary text-primary hover:bg-primary hover:text-white"
+                    asChild
+                  >
+                    <Link href="/subscribe">
+                      <Crown className="mr-2" size={20} />
+                      اشتراك الآن
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Features Overview */}
+        <div className="grid md:grid-cols-3 gap-6">
+          <Card className="bg-white/60 backdrop-blur-sm">
+            <CardContent className="p-6 text-center">
+              <Globe className="w-12 h-12 text-primary mx-auto mb-4" />
+              <h3 className="font-semibold text-gray-900 mb-2">190+ دولة</h3>
+              <p className="text-sm text-gray-600">اختر من أي دولة في العالم</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/60 backdrop-blur-sm">
+            <CardContent className="p-6 text-center">
+              <Users className="w-12 h-12 text-primary mx-auto mb-4" />
+              <h3 className="font-semibold text-gray-900 mb-2">آمن ومحمي</h3>
+              <p className="text-sm text-gray-600">نظام إبلاغ وحظر متقدم</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/60 backdrop-blur-sm">
+            <CardContent className="p-6 text-center">
+              <Video className="w-12 h-12 text-primary mx-auto mb-4" />
+              <h3 className="font-semibold text-gray-900 mb-2">جودة HD</h3>
+              <p className="text-sm text-gray-600">فيديو وصوت عالي الجودة</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
