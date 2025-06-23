@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import Stripe from "stripe";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertChatSessionSchema, insertUserReportSchema } from "@shared/schema";
+import { insertChatSessionSchema, insertUserReportSchema, updateUserPermissionsSchema } from "@shared/schema";
 import { z } from "zod";
 
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -174,6 +174,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error: any) {
       console.error('Report error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Admin middleware
+  const isAdmin = async (req: any, res: any, next: any) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      req.adminUser = user;
+      next();
+    } catch (error) {
+      res.status(500).json({ message: "Error checking admin status" });
+    }
+  };
+
+  // Admin routes
+  app.get('/api/admin/users', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { limit = 50, offset = 0 } = req.query;
+      const users = await storage.getAllUsers(parseInt(limit), parseInt(offset));
+      res.json(users);
+    } catch (error: any) {
+      console.error('Admin users error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put('/api/admin/users/permissions', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const permissions = updateUserPermissionsSchema.parse(req.body);
+      const updatedUser = await storage.updateUserPermissions(permissions);
+      res.json(updatedUser);
+    } catch (error: any) {
+      console.error('Admin permissions error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/admin/chat-sessions', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const sessions = await storage.getAllActiveChatSessions();
+      res.json(sessions);
+    } catch (error: any) {
+      console.error('Admin chat sessions error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/admin/reports', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { limit = 50, offset = 0 } = req.query;
+      const reports = await storage.getUserReports(parseInt(limit), parseInt(offset));
+      res.json(reports);
+    } catch (error: any) {
+      console.error('Admin reports error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Admin monitoring route - join any active chat session
+  app.post('/api/admin/monitor-session', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { sessionId } = req.body;
+      const adminUserId = req.user.claims.sub;
+      
+      // Notify users in the session that admin is monitoring
+      const adminWs = connectedUsers.get(adminUserId);
+      if (adminWs && adminWs.readyState === WebSocket.OPEN) {
+        adminWs.send(JSON.stringify({
+          type: 'admin_monitor',
+          sessionId,
+          message: 'Admin monitoring enabled for this session'
+        }));
+      }
+      
+      res.json({ success: true, message: 'Monitoring session' });
+    } catch (error: any) {
+      console.error('Admin monitor error:', error);
       res.status(500).json({ message: error.message });
     }
   });

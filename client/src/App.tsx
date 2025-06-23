@@ -8,6 +8,7 @@ import Landing from "@/pages/landing";
 import Home from "@/pages/home";
 import Subscribe from "@/pages/subscribe";
 import VideoChat from "@/pages/video-chat";
+import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,12 +17,18 @@ function Router() {
   return (
     <Switch>
       {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
+        <>
+          <Route path="/" component={Landing} />
+          <Route path="/subscribe" component={Landing} />
+          <Route path="/admin" component={Landing} />
+          <Route path="/video-chat" component={Landing} />
+        </>
       ) : (
         <>
           <Route path="/" component={Home} />
           <Route path="/subscribe" component={Subscribe} />
           <Route path="/video-chat" component={VideoChat} />
+          <Route path="/admin" component={Admin} />
         </>
       )}
       <Route component={NotFound} />

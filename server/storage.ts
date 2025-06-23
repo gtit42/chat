@@ -7,6 +7,7 @@ import {
   type ChatSession,
   type InsertChatSession,
   type InsertUserReport,
+  type UpdateUserPermissions,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull } from "drizzle-orm";
@@ -27,6 +28,12 @@ export interface IStorage {
   
   // Report operations
   createUserReport(reporterId: string, report: InsertUserReport): Promise<void>;
+  
+  // Admin operations
+  getAllUsers(limit?: number, offset?: number): Promise<User[]>;
+  updateUserPermissions(permissions: UpdateUserPermissions): Promise<User>;
+  getAllActiveChatSessions(): Promise<ChatSession[]>;
+  getUserReports(limit?: number, offset?: number): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -140,6 +147,78 @@ export class DatabaseStorage implements IStorage {
         reporterId,
         ...report,
       });
+  }
+
+  // Admin operations
+  async getAllUsers(limit: number = 50, offset: number = 0): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(users.createdAt);
+  }
+
+  async updateUserPermissions(permissions: UpdateUserPermissions): Promise<User> {
+    const { userId, ...updateData } = permissions;
+    const [user] = await db
+      .update(users)
+      .set({
+        ...updateData,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async getAllActiveChatSessions(): Promise<ChatSession[]> {
+    return await db
+      .select()
+      .from(chatSessions)
+      .where(eq(chatSessions.status, "connected"))
+      .orderBy(chatSessions.startedAt);
+  }
+
+  async getUserReports(limit: number = 50, offset: number = 0): Promise<any[]> {
+    const reports = await db
+      .select({
+        id: userReports.id,
+        reason: userReports.reason,
+        createdAt: userReports.createdAt,
+        reporterId: userReports.reporterId,
+        reportedUserId: userReports.reportedUserId,
+      })
+      .from(userReports)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(userReports.createdAt);
+
+    // Get user details for reporters and reported users
+    const enrichedReports = await Promise.all(
+      reports.map(async (report) => {
+        const [reporter, reported] = await Promise.all([
+          this.getUser(report.reporterId),
+          this.getUser(report.reportedUserId),
+        ]);
+        
+        return {
+          ...report,
+          reporter: reporter ? {
+            id: reporter.id,
+            email: reporter.email,
+            firstName: reporter.firstName,
+          } : null,
+          reported: reported ? {
+            id: reported.id,
+            email: reported.email,
+            firstName: reported.firstName,
+          } : null,
+        };
+      })
+    );
+
+    return enrichedReports;
   }
 }
 
