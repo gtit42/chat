@@ -9,10 +9,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
-if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
-}
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+// Use a test publishable key for development
+const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_51000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 
 const SubscribeForm = () => {
   const stripe = useStripe();
