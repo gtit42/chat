@@ -111,6 +111,9 @@ ChatConnect is a modern real-time video chat application that connects users ran
 
 Preferred communication style: Simple, everyday language.
 Admin user: ibrahimy2gg2g@gmail.com with full admin privileges.
+UI Theme: Clean white background design with blue-purple gradients.
+Mobile login: Enhanced with account selection prompt for multiple accounts.
+Display features: Show real-time online user count on homepage.
 
 ## Recent Changes
 

@@ -57,7 +57,7 @@ const SubscribeForm = () => {
       <Button 
         type="submit" 
         disabled={!stripe || isProcessing}
-        className="w-full bg-gradient-to-r from-primary to-secondary text-white py-3 font-semibold"
+        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 font-semibold"
         size="lg"
       >
         {isProcessing ? (
@@ -169,9 +169,9 @@ export default function Subscribe() {
           </Card>
 
           {/* Premium Plan */}
-          <Card className="shadow-2xl border-4 border-primary/20 relative bg-gradient-to-br from-primary/5 to-secondary/5">
+          <Card className="shadow-2xl border-4 border-blue-200 relative bg-white">
             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <span className="bg-gradient-to-r from-primary to-secondary text-white px-4 py-1 rounded-full text-sm font-semibold">
+              <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
                 الأكثر شعبية
               </span>
             </div>

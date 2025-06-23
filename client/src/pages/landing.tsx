@@ -5,7 +5,7 @@ import { Link } from "wouter";
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-purple-50 to-secondary/10">
+    <div className="min-h-screen bg-white">
       {/* Navigation Header */}
       <nav className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -168,14 +168,14 @@ export default function VideoChat() {
   }
 
   return (
-    <div className="min-h-screen bg-dark">
+    <div className="min-h-screen bg-gray-50">
       {/* Top Control Bar */}
-      <div className="bg-dark/90 backdrop-blur-sm border-b border-gray-700 p-4">
+      <div className="bg-white shadow-sm border-b border-gray-200 p-4">
         <div className="flex justify-between items-center max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/">
-                <X className="text-gray-300 hover:text-white" size={20} />
+                <X className="text-gray-600 hover:text-gray-900" size={20} />
               </Link>
             </Button>
             <div className="flex items-center space-x-2">
@@ -184,13 +184,13 @@ export default function VideoChat() {
                 connectionStatus === "في الانتظار" ? "bg-yellow-500 animate-pulse" :
                 "bg-red-500"
               }`} />
-              <span className="text-white font-medium">{connectionStatus}</span>
+              <span className="text-gray-900 font-medium">{connectionStatus}</span>
             </div>
           </div>
 
           <div className="flex items-center space-x-3">
             <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-              <SelectTrigger className="w-[200px] bg-gray-800 text-white border-gray-600">
+              <SelectTrigger className="w-[200px] bg-white text-gray-900 border-gray-300">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="max-h-60 overflow-y-auto">
@@ -214,7 +214,7 @@ export default function VideoChat() {
             {!user?.isSubscribed && (
               <Button 
                 size="sm"
-                className="bg-gradient-to-r from-secondary to-pink-500 text-white hover:shadow-lg"
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:shadow-lg"
                 asChild
               >
                 <Link href="/subscribe">

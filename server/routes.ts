@@ -328,6 +328,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Online users count route
+  app.get('/api/stats/online-users', async (req, res) => {
+    try {
+      const onlineCount = connectedUsers.size;
+      res.json({ count: onlineCount });
+    } catch (error: any) {
+      console.error('Online users count error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Admin monitoring route - join any active chat session
   app.post('/api/admin/monitor-session', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
