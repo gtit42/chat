@@ -9,6 +9,7 @@ import Home from "@/pages/home";
 import Subscribe from "@/pages/subscribe";
 import VideoChat from "@/pages/video-chat";
 import Admin from "@/pages/admin";
+import EnhancedAdmin from "@/pages/enhanced-admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -29,6 +30,7 @@ function Router() {
           <Route path="/subscribe" component={Subscribe} />
           <Route path="/video-chat" component={VideoChat} />
           <Route path="/admin" component={Admin} />
+          <Route path="/enhanced-admin" component={EnhancedAdmin} />
         </>
       )}
       <Route component={NotFound} />

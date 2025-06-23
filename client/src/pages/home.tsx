@@ -1,8 +1,11 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Video, Crown, Globe, Users } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Video, Crown, Globe, Users, VideoIcon, UsersIcon, Globe2Icon, ShieldIcon, Settings } from "lucide-react";
 import { Link } from "wouter";
+import { useState } from "react";
+import { COUNTRIES } from "@shared/countries";
 
 export default function Home() {
   const { user } = useAuth();
@@ -21,12 +24,20 @@ export default function Home() {
             </div>
             <div className="flex items-center space-x-4">
               {user?.isAdmin && (
-                <Button variant="secondary" size="sm" asChild>
-                  <Link href="/admin">
-                    <Crown className="mr-1" size={16} />
-                    لوحة الإدارة
-                  </Link>
-                </Button>
+                <div className="flex space-x-2">
+                  <Button variant="secondary" size="sm" asChild>
+                    <Link href="/admin">
+                      <Crown className="mr-1" size={16} />
+                      إدارة أساسية
+                    </Link>
+                  </Button>
+                  <Button variant="default" size="sm" asChild>
+                    <Link href="/enhanced-admin">
+                      <Settings className="mr-1" size={16} />
+                      إدارة متقدمة
+                    </Link>
+                  </Button>
+                </div>
               )}
               {user?.profileImageUrl && (
                 <img

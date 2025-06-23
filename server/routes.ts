@@ -5,6 +5,7 @@ import Stripe from "stripe";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertChatSessionSchema, insertUserReportSchema, updateUserPermissionsSchema } from "@shared/schema";
+import { matchingSystem } from "./matchingSystem";
 import { z } from "zod";
 
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -239,6 +240,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(reports);
     } catch (error: any) {
       console.error('Admin reports error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Enhanced admin routes
+  app.post('/api/admin/ban-user', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { userId, reason, duration } = req.body;
+      const adminId = req.user.claims.sub;
+      
+      await storage.banUser({ userId, reason, duration }, adminId);
+      res.json({ success: true, message: 'User banned successfully' });
+    } catch (error: any) {
+      console.error('Ban user error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post('/api/admin/unban-user', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.body;
+      const adminId = req.user.claims.sub;
+      
+      await storage.unbanUser(userId, adminId);
+      res.json({ success: true, message: 'User unbanned successfully' });
+    } catch (error: any) {
+      console.error('Unban user error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/admin/actions', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { limit = 50, offset = 0 } = req.query;
+      const actions = await storage.getAdminActions(parseInt(limit), parseInt(offset));
+      res.json(actions);
+    } catch (error: any) {
+      console.error('Admin actions error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post('/api/admin/review-report', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { reportId, status, adminAction } = req.body;
+      const adminId = req.user.claims.sub;
+      
+      await storage.updateReportStatus(reportId, status, adminAction, adminId);
+      res.json({ success: true, message: 'Report reviewed successfully' });
+    } catch (error: any) {
+      console.error('Review report error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get('/api/admin/server-stats', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const activeChatSessions = await storage.getAllActiveChatSessions();
+      const serverPools = await storage.getServerPools();
+      
+      // Import matching system to get queue stats
+      const { matchingSystem } = await import('./matchingSystem');
+      const queueStats = matchingSystem.getQueueStats();
+      
+      res.json({
+        totalUsers: users.length,
+        activeChats: activeChatSessions.length,
+        queueStats,
+        serverPools,
+      });
+    } catch (error: any) {
+      console.error('Server stats error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post('/api/admin/server-pools', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { region, countries, capacity } = req.body;
+      const pool = await storage.createServerPool({ region, countries, capacity });
+      res.json(pool);
+    } catch (error: any) {
+      console.error('Create server pool error:', error);
       res.status(500).json({ message: error.message });
     }
   });
