@@ -20,6 +20,14 @@ export default function Home() {
               <h1 className="text-xl font-bold text-gray-900">ChatConnect</h1>
             </div>
             <div className="flex items-center space-x-4">
+              {user?.isAdmin && (
+                <Button variant="secondary" size="sm" asChild>
+                  <Link href="/admin">
+                    <Crown className="mr-1" size={16} />
+                    لوحة الإدارة
+                  </Link>
+                </Button>
+              )}
               {user?.profileImageUrl && (
                 <img
                   src={user.profileImageUrl}

@@ -110,8 +110,10 @@ ChatConnect is a modern real-time video chat application that connects users ran
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Admin user: ibrahimy2gg2g@gmail.com with full admin privileges.
 
 ## Changelog
 
-Changelog:
-- June 23, 2025. Initial setup
+- June 23, 2025: Initial video chat application setup with Replit Auth and Stripe
+- June 23, 2025: Added comprehensive admin panel with user management, chat monitoring, and reporting system
+- Added admin privileges for ibrahimy2gg2g@gmail.com

@@ -35,6 +35,9 @@ export const users = pgTable("users", {
   isSubscribed: boolean("is_subscribed").default(false),
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
   preferredCountry: varchar("preferred_country").default("any"),
+  isAdmin: boolean("is_admin").default(false),
+  canPromoteUsers: boolean("can_promote_users").default(false),
+  isBanned: boolean("is_banned").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -76,8 +79,16 @@ export const insertUserReportSchema = createInsertSchema(userReports).pick({
   reason: true,
 });
 
+export const updateUserPermissionsSchema = z.object({
+  userId: z.string(),
+  isSubscribed: z.boolean().optional(),
+  canPromoteUsers: z.boolean().optional(),
+  isBanned: z.boolean().optional(),
+});
+
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type ChatSession = typeof chatSessions.$inferSelect;
 export type InsertChatSession = z.infer<typeof insertChatSessionSchema>;
 export type InsertUserReport = z.infer<typeof insertUserReportSchema>;
+export type UpdateUserPermissions = z.infer<typeof updateUserPermissionsSchema>;
