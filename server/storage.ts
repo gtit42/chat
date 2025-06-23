@@ -2,15 +2,27 @@ import {
   users,
   chatSessions,
   userReports,
+  serverPools,
+  chatRooms,
+  adminActions,
+  userBans,
   type User,
   type UpsertUser,
   type ChatSession,
+  type ServerPool,
+  type ChatRoom,
+  type AdminAction,
+  type UserBan,
   type InsertChatSession,
   type InsertUserReport,
+  type InsertServerPool,
+  type InsertChatRoom,
+  type InsertAdminAction,
+  type InsertUserBan,
   type UpdateUserPermissions,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, or, desc, asc, isNull, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -34,6 +46,26 @@ export interface IStorage {
   updateUserPermissions(permissions: UpdateUserPermissions): Promise<User>;
   getAllActiveChatSessions(): Promise<ChatSession[]>;
   getUserReports(limit?: number, offset?: number): Promise<any[]>;
+  
+  // Enhanced admin operations
+  banUser(ban: InsertUserBan, adminId: string): Promise<void>;
+  unbanUser(userId: string, adminId: string): Promise<void>;
+  getUserBanStatus(userId: string): Promise<UserBan | undefined>;
+  logAdminAction(action: InsertAdminAction, adminId: string): Promise<void>;
+  getAdminActions(limit?: number, offset?: number): Promise<AdminAction[]>;
+  updateReportStatus(reportId: number, status: string, adminAction: string, adminId: string): Promise<void>;
+  
+  // Server pool operations
+  createServerPool(pool: InsertServerPool): Promise<ServerPool>;
+  getServerPools(): Promise<ServerPool[]>;
+  updateServerLoad(serverId: number, currentLoad: number): Promise<void>;
+  findOptimalServer(countryCode: string): Promise<ServerPool | undefined>;
+  
+  // Chat room operations
+  createChatRoom(room: InsertChatRoom): Promise<ChatRoom>;
+  findAvailableRoom(countryCode: string): Promise<ChatRoom | undefined>;
+  updateRoomUserCount(roomId: number, currentUsers: number): Promise<void>;
+  getRoomsByCountry(countryCode: string): Promise<ChatRoom[]>;
 }
 
 export class DatabaseStorage implements IStorage {

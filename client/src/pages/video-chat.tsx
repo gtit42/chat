@@ -11,16 +11,7 @@ import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-
-const countries = [
-  { value: "any", label: "أي دولة", flag: "🌍" },
-  { value: "sa", label: "السعودية", flag: "🇸🇦" },
-  { value: "eg", label: "مصر", flag: "🇪🇬" },
-  { value: "ae", label: "الإمارات", flag: "🇦🇪" },
-  { value: "us", label: "الولايات المتحدة", flag: "🇺🇸" },
-  { value: "uk", label: "المملكة المتحدة", flag: "🇬🇧" },
-  { value: "fr", label: "فرنسا", flag: "🇫🇷" },
-];
+import { COUNTRIES } from "@shared/countries";
 
 export default function VideoChat() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -202,12 +193,18 @@ export default function VideoChat() {
               <SelectTrigger className="w-[200px] bg-gray-800 text-white border-gray-600">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                {countries.map((country) => (
-                  <SelectItem key={country.value} value={country.value}>
+              <SelectContent className="max-h-60 overflow-y-auto">
+                <SelectItem value="any">
+                  <div className="flex items-center space-x-2">
+                    <span>🌍</span>
+                    <span>جميع الدول</span>
+                  </div>
+                </SelectItem>
+                {COUNTRIES.map((country) => (
+                  <SelectItem key={country.code} value={country.code}>
                     <div className="flex items-center space-x-2">
-                      <span>{country.flag}</span>
-                      <span>{country.label}</span>
+                      <span>🌐</span>
+                      <span>{country.name}</span>
                     </div>
                   </SelectItem>
                 ))}
