@@ -17,10 +17,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Initialize routes and auth
-(async () => {
-  await registerRoutes(app);
-  await setupAuth(app);
-})();
+let initialized = false;
+
+const initializeApp = async () => {
+  if (!initialized) {
+    const server = await registerRoutes(app);
+    await setupAuth(app);
+    initialized = true;
+  }
+};
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -29,4 +34,8 @@ app.use((err, req, res, next) => {
   res.status(status).json({ message });
 });
 
-export default app;
+// Vercel serverless function handler
+export default async (req, res) => {
+  await initializeApp();
+  return app(req, res);
+};
