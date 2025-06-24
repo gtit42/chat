@@ -117,6 +117,12 @@ Display features: Show real-time online user count on homepage.
 
 ## Recent Changes
 
+- June 24, 2025: Prepared application for Vercel deployment
+  - Created vercel.json configuration
+  - Added separate package.json files for client/server
+  - Updated server entry point for serverless functions
+  - Added CORS configuration for production
+  - Created deployment documentation
 - June 23, 2025: Enhanced system with 190+ countries support
 - June 23, 2025: Implemented advanced matching system with regional server distribution
 - June 23, 2025: Added comprehensive enhanced admin panel with:
