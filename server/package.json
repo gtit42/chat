@@ -1,6 +1,7 @@
 {
   "name": "chatconnect-server",
   "version": "1.0.0",
+  "type": "module",
   "description": "ChatConnect Server for Vercel",
   "main": "dist/index.js",
   "scripts": {
