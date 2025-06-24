@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { VideoInterface } from "@/components/video-interface";
 import { PermissionRequest } from "@/components/permission-request";
-import { X, Globe, Crown, Wifi } from "lucide-react";
+import { X, Crown } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -25,7 +25,7 @@ export default function VideoChat() {
     localStream, 
     remoteStream, 
     isConnected, 
-    startCall, 
+ 
     endCall,
     toggleMute,
     toggleCamera,
@@ -63,7 +63,7 @@ export default function VideoChat() {
 
   const handleRequestPermissions = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      await navigator.mediaDevices.getUserMedia({ 
         video: true, 
         audio: true 
       });

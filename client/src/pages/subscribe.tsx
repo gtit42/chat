@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
 // Use a test publishable key for development
-const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_51000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+const STRIPE_PUBLISHABLE_KEY = (import.meta as any).env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_51000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
 const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 
 const SubscribeForm = () => {
@@ -92,7 +92,7 @@ export default function Subscribe() {
       .then((data) => {
         setClientSecret(data.clientSecret);
       })
-      .catch((error) => {
+      .catch(() => {
         toast({
           title: "خطأ",
           description: "فشل في إنشاء الاشتراك",
