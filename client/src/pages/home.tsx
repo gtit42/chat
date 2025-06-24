@@ -1,11 +1,11 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Video, Crown, Globe, Users, VideoIcon, UsersIcon, Globe2Icon, ShieldIcon, Settings } from "lucide-react";
+
+import { Video, Crown, Globe, Users, ShieldIcon, Settings } from "lucide-react";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
-import { COUNTRIES } from "@shared/countries";
+
 
 export default function Home() {
   const { user } = useAuth();

@@ -13,7 +13,7 @@ import {
   Crown,
   Ban,
   CheckCircle,
-  XCircle,
+
   Activity
 } from "lucide-react";
 import { Link } from "wouter";

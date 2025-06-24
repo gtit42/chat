@@ -110,9 +110,9 @@ export function useWebRTC() {
 
         case 'webrtc_offer':
           try {
-            await peerConnection.current.setRemoteDescription(message.offer);
-            const answer = await peerConnection.current.createAnswer();
-            await peerConnection.current.setLocalDescription(answer);
+            await peerConnection.current?.setRemoteDescription(message.offer);
+            const answer = await peerConnection.current?.createAnswer();
+            await peerConnection.current?.setLocalDescription(answer);
             
             if (sendMessage) {
               sendMessage({
@@ -128,7 +128,7 @@ export function useWebRTC() {
 
         case 'webrtc_answer':
           try {
-            await peerConnection.current.setRemoteDescription(message.answer);
+            await peerConnection.current?.setRemoteDescription(message.answer);
           } catch (error) {
             console.error('Error handling answer:', error);
           }
@@ -136,7 +136,7 @@ export function useWebRTC() {
 
         case 'webrtc_candidate':
           try {
-            await peerConnection.current.addIceCandidate(message.candidate);
+            await peerConnection.current?.addIceCandidate(message.candidate);
           } catch (error) {
             console.error('Error adding ice candidate:', error);
           }

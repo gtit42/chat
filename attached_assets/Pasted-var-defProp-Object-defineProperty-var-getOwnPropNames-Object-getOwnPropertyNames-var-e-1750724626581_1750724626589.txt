@@ -1,0 +1,1145 @@
+var __defProp = Object.defineProperty;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+
+// shared/schema.ts
+var schema_exports = {};
+__export(schema_exports, {
+  adminActions: () => adminActions,
+  chatRooms: () => chatRooms,
+  chatSessions: () => chatSessions,
+  insertAdminActionSchema: () => insertAdminActionSchema,
+  insertChatRoomSchema: () => insertChatRoomSchema,
+  insertChatSessionSchema: () => insertChatSessionSchema,
+  insertServerPoolSchema: () => insertServerPoolSchema,
+  insertUserBanSchema: () => insertUserBanSchema,
+  insertUserReportSchema: () => insertUserReportSchema,
+  insertUserSchema: () => insertUserSchema,
+  serverPools: () => serverPools,
+  sessions: () => sessions,
+  updateUserPermissionsSchema: () => updateUserPermissionsSchema,
+  userBans: () => userBans,
+  userReports: () => userReports,
+  users: () => users
+});
+import {
+  pgTable,
+  text,
+  varchar,
+  timestamp,
+  jsonb,
+  index,
+  boolean,
+  integer,
+  serial
+} from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+var sessions, users, chatSessions, userReports, serverPools, chatRooms, adminActions, userBans, insertUserSchema, insertChatSessionSchema, insertUserReportSchema, updateUserPermissionsSchema, insertServerPoolSchema, insertChatRoomSchema, insertAdminActionSchema, insertUserBanSchema;
+var init_schema = __esm({
+  "shared/schema.ts"() {
+    "use strict";
+    sessions = pgTable(
+      "sessions",
+      {
+        sid: varchar("sid").primaryKey(),
+        sess: jsonb("sess").notNull(),
+        expire: timestamp("expire").notNull()
+      },
+      (table) => [index("IDX_session_expire").on(table.expire)]
+    );
+    users = pgTable("users", {
+      id: varchar("id").primaryKey().notNull(),
+      email: varchar("email").unique(),
+      firstName: varchar("first_name"),
+      lastName: varchar("last_name"),
+      profileImageUrl: varchar("profile_image_url"),
+      stripeCustomerId: varchar("stripe_customer_id"),
+      stripeSubscriptionId: varchar("stripe_subscription_id"),
+      isSubscribed: boolean("is_subscribed").default(false),
+      subscriptionExpiresAt: timestamp("subscription_expires_at"),
+      preferredCountry: varchar("preferred_country").default("any"),
+      isAdmin: boolean("is_admin").default(false),
+      canPromoteUsers: boolean("can_promote_users").default(false),
+      isBanned: boolean("is_banned").default(false),
+      createdAt: timestamp("created_at").defaultNow(),
+      updatedAt: timestamp("updated_at").defaultNow()
+    });
+    chatSessions = pgTable("chat_sessions", {
+      id: serial("id").primaryKey(),
+      userId: varchar("user_id").references(() => users.id).notNull(),
+      partnerId: varchar("partner_id").references(() => users.id),
+      status: varchar("status").notNull().default("waiting"),
+      // waiting, connected, ended
+      country: varchar("country").default("any"),
+      startedAt: timestamp("started_at").defaultNow(),
+      endedAt: timestamp("ended_at")
+    });
+    userReports = pgTable("user_reports", {
+      id: serial("id").primaryKey(),
+      reporterId: varchar("reporter_id").references(() => users.id).notNull(),
+      reportedUserId: varchar("reported_user_id").references(() => users.id).notNull(),
+      reason: text("reason"),
+      status: varchar("status").default("pending"),
+      // pending, reviewed, resolved
+      adminAction: text("admin_action"),
+      reviewedBy: varchar("reviewed_by").references(() => users.id),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    serverPools = pgTable("server_pools", {
+      id: serial("id").primaryKey(),
+      region: varchar("region").notNull(),
+      countries: text("countries").array(),
+      capacity: integer("capacity").default(100),
+      currentLoad: integer("current_load").default(0),
+      isActive: boolean("is_active").default(true),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    chatRooms = pgTable("chat_rooms", {
+      id: serial("id").primaryKey(),
+      countryCode: varchar("country_code").notNull(),
+      region: varchar("region"),
+      maxUsers: integer("max_users").default(2),
+      currentUsers: integer("current_users").default(0),
+      isActive: boolean("is_active").default(true),
+      serverId: integer("server_id").references(() => serverPools.id),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    adminActions = pgTable("admin_actions", {
+      id: serial("id").primaryKey(),
+      adminId: varchar("admin_id").references(() => users.id).notNull(),
+      action: varchar("action").notNull(),
+      // ban_user, unban_user, promote_user, etc.
+      targetUserId: varchar("target_user_id").references(() => users.id),
+      targetSessionId: integer("target_session_id").references(() => chatSessions.id),
+      details: jsonb("details"),
+      reason: text("reason"),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    userBans = pgTable("user_bans", {
+      id: serial("id").primaryKey(),
+      userId: varchar("user_id").references(() => users.id).notNull(),
+      bannedBy: varchar("banned_by").references(() => users.id).notNull(),
+      reason: text("reason"),
+      duration: integer("duration_hours"),
+      // null for permanent
+      expiresAt: timestamp("expires_at"),
+      isActive: boolean("is_active").default(true),
+      createdAt: timestamp("created_at").defaultNow()
+    });
+    insertUserSchema = createInsertSchema(users).pick({
+      email: true,
+      firstName: true,
+      lastName: true,
+      profileImageUrl: true
+    });
+    insertChatSessionSchema = createInsertSchema(chatSessions).pick({
+      userId: true,
+      country: true
+    });
+    insertUserReportSchema = createInsertSchema(userReports).pick({
+      reportedUserId: true,
+      reason: true
+    });
+    updateUserPermissionsSchema = z.object({
+      userId: z.string(),
+      isAdmin: z.boolean().optional(),
+      canPromoteUsers: z.boolean().optional(),
+      isBanned: z.boolean().optional()
+    });
+    insertServerPoolSchema = createInsertSchema(serverPools).pick({
+      region: true,
+      countries: true,
+      capacity: true
+    });
+    insertChatRoomSchema = createInsertSchema(chatRooms).pick({
+      countryCode: true,
+      region: true,
+      maxUsers: true,
+      serverId: true
+    });
+    insertAdminActionSchema = createInsertSchema(adminActions).pick({
+      action: true,
+      targetUserId: true,
+      targetSessionId: true,
+      details: true,
+      reason: true
+    });
+    insertUserBanSchema = createInsertSchema(userBans).pick({
+      userId: true,
+      reason: true,
+      duration: true
+    });
+  }
+});
+
+// server/db.ts
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import ws from "ws";
+var pool, db;
+var init_db = __esm({
+  "server/db.ts"() {
+    "use strict";
+    init_schema();
+    neonConfig.webSocketConstructor = ws;
+    if (!process.env.DATABASE_URL) {
+      throw new Error(
+        "DATABASE_URL must be set. Did you forget to provision a database?"
+      );
+    }
+    pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    db = drizzle({ client: pool, schema: schema_exports });
+  }
+});
+
+// server/storage.ts
+import { eq, and, isNull } from "drizzle-orm";
+var DatabaseStorage, storage;
+var init_storage = __esm({
+  "server/storage.ts"() {
+    "use strict";
+    init_schema();
+    init_db();
+    DatabaseStorage = class {
+      async getUser(id) {
+        const [user] = await db.select().from(users).where(eq(users.id, id));
+        return user;
+      }
+      async upsertUser(userData) {
+        const [user] = await db.insert(users).values(userData).onConflictDoUpdate({
+          target: users.id,
+          set: {
+            ...userData,
+            updatedAt: /* @__PURE__ */ new Date()
+          }
+        }).returning();
+        return user;
+      }
+      async updateUserStripeInfo(userId, customerId, subscriptionId) {
+        const [user] = await db.update(users).set({
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscriptionId,
+          updatedAt: /* @__PURE__ */ new Date()
+        }).where(eq(users.id, userId)).returning();
+        return user;
+      }
+      async updateUserSubscription(userId, isSubscribed, expiresAt) {
+        const [user] = await db.update(users).set({
+          isSubscribed,
+          subscriptionExpiresAt: expiresAt,
+          updatedAt: /* @__PURE__ */ new Date()
+        }).where(eq(users.id, userId)).returning();
+        return user;
+      }
+      async createChatSession(session2) {
+        const [chatSession] = await db.insert(chatSessions).values(session2).returning();
+        return chatSession;
+      }
+      async findWaitingUser(country, excludeUserId) {
+        const [session2] = await db.select().from(chatSessions).where(
+          and(
+            eq(chatSessions.status, "waiting"),
+            isNull(chatSessions.partnerId),
+            country === "any" ? void 0 : eq(chatSessions.country, country)
+          )
+        ).limit(1);
+        return session2;
+      }
+      async updateChatSessionPartner(sessionId, partnerId) {
+        const [session2] = await db.update(chatSessions).set({
+          partnerId,
+          status: "connected"
+        }).where(eq(chatSessions.id, sessionId)).returning();
+        return session2;
+      }
+      async endChatSession(sessionId) {
+        await db.update(chatSessions).set({
+          status: "ended",
+          endedAt: /* @__PURE__ */ new Date()
+        }).where(eq(chatSessions.id, sessionId));
+      }
+      async getUserActiveSessions(userId) {
+        return await db.select().from(chatSessions).where(
+          and(
+            eq(chatSessions.userId, userId),
+            eq(chatSessions.status, "connected")
+          )
+        );
+      }
+      async createUserReport(reporterId, report) {
+        await db.insert(userReports).values({
+          reporterId,
+          ...report
+        });
+      }
+      // Admin operations
+      async getAllUsers(limit = 50, offset = 0) {
+        return await db.select().from(users).limit(limit).offset(offset).orderBy(users.createdAt);
+      }
+      async updateUserPermissions(permissions) {
+        const { userId, ...updateData } = permissions;
+        const [user] = await db.update(users).set({
+          ...updateData,
+          updatedAt: /* @__PURE__ */ new Date()
+        }).where(eq(users.id, userId)).returning();
+        return user;
+      }
+      async getAllActiveChatSessions() {
+        return await db.select().from(chatSessions).where(eq(chatSessions.status, "connected")).orderBy(chatSessions.startedAt);
+      }
+      async getUserReports(limit = 50, offset = 0) {
+        const reports = await db.select({
+          id: userReports.id,
+          reason: userReports.reason,
+          createdAt: userReports.createdAt,
+          reporterId: userReports.reporterId,
+          reportedUserId: userReports.reportedUserId
+        }).from(userReports).limit(limit).offset(offset).orderBy(userReports.createdAt);
+        const enrichedReports = await Promise.all(
+          reports.map(async (report) => {
+            const [reporter, reported] = await Promise.all([
+              this.getUser(report.reporterId),
+              this.getUser(report.reportedUserId)
+            ]);
+            return {
+              ...report,
+              reporter: reporter ? {
+                id: reporter.id,
+                email: reporter.email,
+                firstName: reporter.firstName
+              } : null,
+              reported: reported ? {
+                id: reported.id,
+                email: reported.email,
+                firstName: reported.firstName
+              } : null
+            };
+          })
+        );
+        return enrichedReports;
+      }
+    };
+    storage = new DatabaseStorage();
+  }
+});
+
+// server/matchingSystem.ts
+var matchingSystem_exports = {};
+__export(matchingSystem_exports, {
+  matchingSystem: () => matchingSystem
+});
+var AdvancedMatchingSystem, matchingSystem;
+var init_matchingSystem = __esm({
+  "server/matchingSystem.ts"() {
+    "use strict";
+    init_storage();
+    AdvancedMatchingSystem = class {
+      queue = {};
+      serverRegions = /* @__PURE__ */ new Map();
+      constructor() {
+        this.initializeServerRegions();
+      }
+      initializeServerRegions() {
+        this.serverRegions.set("middle-east", [
+          "SA",
+          "AE",
+          "EG",
+          "JO",
+          "LB",
+          "SY",
+          "IQ",
+          "KW",
+          "QA",
+          "BH",
+          "OM",
+          "YE"
+        ]);
+        this.serverRegions.set("north-africa", [
+          "MA",
+          "TN",
+          "LY",
+          "DZ",
+          "SD"
+        ]);
+        this.serverRegions.set("europe", [
+          "GB",
+          "FR",
+          "DE",
+          "IT",
+          "ES",
+          "NL",
+          "BE",
+          "CH",
+          "AT",
+          "SE",
+          "NO",
+          "DK"
+        ]);
+        this.serverRegions.set("north-america", [
+          "US",
+          "CA",
+          "MX"
+        ]);
+        this.serverRegions.set("asia-pacific", [
+          "CN",
+          "JP",
+          "KR",
+          "IN",
+          "AU",
+          "NZ",
+          "SG",
+          "MY",
+          "TH",
+          "VN",
+          "PH"
+        ]);
+        this.serverRegions.set("south-america", [
+          "BR",
+          "AR",
+          "CL",
+          "CO",
+          "PE",
+          "VE"
+        ]);
+        this.serverRegions.set("africa", [
+          "NG",
+          "ZA",
+          "KE",
+          "GH",
+          "ET",
+          "UG",
+          "TZ"
+        ]);
+      }
+      async findMatch(userId, countryCode) {
+        try {
+          let match = await this.findUserInCountry(userId, countryCode);
+          if (match) return match;
+          const region = this.getRegionForCountry(countryCode);
+          if (region) {
+            const regionCountries = this.serverRegions.get(region) || [];
+            for (const country of regionCountries) {
+              if (country !== countryCode) {
+                match = await this.findUserInCountry(userId, country);
+                if (match) return match;
+              }
+            }
+          }
+          match = await this.findUserInCountry(userId, "any");
+          if (match) return match;
+          await this.addUserToQueue(userId, countryCode);
+          return null;
+        } catch (error) {
+          console.error("\u062E\u0637\u0623 \u0641\u064A \u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u0637\u0627\u0628\u0642\u0629:", error);
+          return null;
+        }
+      }
+      async findUserInCountry(excludeUserId, countryCode) {
+        const waitingUser = await storage.findWaitingUser(countryCode, excludeUserId);
+        return waitingUser?.userId || null;
+      }
+      getRegionForCountry(countryCode) {
+        for (const [region, countries] of this.serverRegions.entries()) {
+          if (countries.includes(countryCode)) {
+            return region;
+          }
+        }
+        return null;
+      }
+      async addUserToQueue(userId, countryCode) {
+        if (!this.queue[countryCode]) {
+          this.queue[countryCode] = {
+            users: [],
+            lastUpdate: Date.now()
+          };
+        }
+        if (!this.queue[countryCode].users.includes(userId)) {
+          this.queue[countryCode].users.push(userId);
+          this.queue[countryCode].lastUpdate = Date.now();
+        }
+      }
+      async removeUserFromQueue(userId) {
+        for (const countryCode in this.queue) {
+          const index2 = this.queue[countryCode].users.indexOf(userId);
+          if (index2 > -1) {
+            this.queue[countryCode].users.splice(index2, 1);
+            this.queue[countryCode].lastUpdate = Date.now();
+          }
+        }
+      }
+      // تنظيف القوائم من المستخدمين القدامى
+      cleanupStaleQueues() {
+        const now = Date.now();
+        const maxAge = 5 * 60 * 1e3;
+        for (const countryCode in this.queue) {
+          if (now - this.queue[countryCode].lastUpdate > maxAge) {
+            this.queue[countryCode].users = [];
+          }
+        }
+      }
+      getQueueStats() {
+        const stats = {};
+        for (const countryCode in this.queue) {
+          stats[countryCode] = this.queue[countryCode].users.length;
+        }
+        return stats;
+      }
+      // توزيع الحمولة على السيرفرات
+      async getOptimalServer(countryCode) {
+        try {
+          const server = await storage.findOptimalServer(countryCode);
+          if (server) {
+            await storage.updateServerLoad(server.id, server.currentLoad + 1);
+            return server;
+          }
+          return null;
+        } catch (error) {
+          console.error("\u062E\u0637\u0623 \u0641\u064A \u0627\u0644\u0639\u062B\u0648\u0631 \u0639\u0644\u0649 \u0627\u0644\u0633\u064A\u0631\u0641\u0631 \u0627\u0644\u0623\u0645\u062B\u0644:", error);
+          return null;
+        }
+      }
+    };
+    matchingSystem = new AdvancedMatchingSystem();
+    setInterval(() => {
+      matchingSystem.cleanupStaleQueues();
+    }, 6e4);
+  }
+});
+
+// server/index.ts
+import express2 from "express";
+
+// server/routes.ts
+init_storage();
+import { createServer } from "http";
+import { WebSocketServer, WebSocket } from "ws";
+import Stripe from "stripe";
+
+// server/replitAuth.ts
+init_storage();
+import * as client from "openid-client";
+import { Strategy } from "openid-client/passport";
+import passport from "passport";
+import session from "express-session";
+import memoize from "memoizee";
+import connectPg from "connect-pg-simple";
+if (!process.env.REPLIT_DOMAINS) {
+  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+}
+var getOidcConfig = memoize(
+  async () => {
+    return await client.discovery(
+      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
+      process.env.REPL_ID
+    );
+  },
+  { maxAge: 3600 * 1e3 }
+);
+function getSession() {
+  const sessionTtl = 7 * 24 * 60 * 60 * 1e3;
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: false,
+    ttl: sessionTtl,
+    tableName: "sessions"
+  });
+  return session({
+    secret: process.env.SESSION_SECRET,
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: true,
+      maxAge: sessionTtl
+    }
+  });
+}
+function updateUserSession(user, tokens) {
+  user.claims = tokens.claims();
+  user.access_token = tokens.access_token;
+  user.refresh_token = tokens.refresh_token;
+  user.expires_at = user.claims?.exp;
+}
+async function upsertUser(claims) {
+  await storage.upsertUser({
+    id: claims["sub"],
+    email: claims["email"],
+    firstName: claims["first_name"],
+    lastName: claims["last_name"],
+    profileImageUrl: claims["profile_image_url"]
+  });
+}
+async function setupAuth(app2) {
+  app2.set("trust proxy", 1);
+  app2.use(getSession());
+  app2.use(passport.initialize());
+  app2.use(passport.session());
+  const config = await getOidcConfig();
+  const verify = async (tokens, verified) => {
+    const user = {};
+    updateUserSession(user, tokens);
+    await upsertUser(tokens.claims());
+    verified(null, user);
+  };
+  for (const domain of process.env.REPLIT_DOMAINS.split(",")) {
+    const strategy = new Strategy(
+      {
+        name: `replitauth:${domain}`,
+        config,
+        scope: "openid email profile offline_access",
+        callbackURL: `https://${domain}/api/callback`
+      },
+      verify
+    );
+    passport.use(strategy);
+  }
+  passport.serializeUser((user, cb) => cb(null, user));
+  passport.deserializeUser((user, cb) => cb(null, user));
+  app2.get("/api/login", (req, res, next) => {
+    passport.authenticate(`replitauth:${req.hostname}`, {
+      prompt: "select_account login consent",
+      scope: ["openid", "email", "profile", "offline_access"]
+    })(req, res, next);
+  });
+  app2.get("/api/callback", (req, res, next) => {
+    passport.authenticate(`replitauth:${req.hostname}`, {
+      successReturnToOrRedirect: "/",
+      failureRedirect: "/api/login"
+    })(req, res, next);
+  });
+  app2.get("/api/logout", (req, res) => {
+    req.logout(() => {
+      res.redirect(
+        client.buildEndSessionUrl(config, {
+          client_id: process.env.REPL_ID,
+          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`
+        }).href
+      );
+    });
+  });
+}
+var isAuthenticated = async (req, res, next) => {
+  const user = req.user;
+  if (!req.isAuthenticated() || !user.expires_at) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const now = Math.floor(Date.now() / 1e3);
+  if (now <= user.expires_at) {
+    return next();
+  }
+  const refreshToken = user.refresh_token;
+  if (!refreshToken) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+  try {
+    const config = await getOidcConfig();
+    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+    updateUserSession(user, tokenResponse);
+    return next();
+  } catch (error) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+};
+
+// server/routes.ts
+init_schema();
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("Missing required Stripe secret: STRIPE_SECRET_KEY");
+}
+var stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2025-05-28.basil"
+});
+var connectedUsers = /* @__PURE__ */ new Map();
+var userSessions = /* @__PURE__ */ new Map();
+async function registerRoutes(app2) {
+  await setupAuth(app2);
+  app2.get("/api/auth/user", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+  app2.post("/api/create-subscription", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (user.stripeSubscriptionId) {
+        const subscription2 = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        return res.json({
+          subscriptionId: subscription2.id,
+          clientSecret: subscription2.latest_invoice?.payment_intent?.client_secret
+        });
+      }
+      if (!user.email) {
+        return res.status(400).json({ message: "No user email on file" });
+      }
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`.trim()
+      });
+      const subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [{
+          price_data: {
+            currency: "usd",
+            unit_amount: 300,
+            // $3.00
+            product: "ChatConnect Premium",
+            recurring: {
+              interval: "month"
+            }
+          }
+        }],
+        payment_behavior: "default_incomplete",
+        expand: ["latest_invoice.payment_intent"]
+      });
+      await storage.updateUserStripeInfo(userId, customer.id, subscription.id);
+      res.json({
+        subscriptionId: subscription.id,
+        clientSecret: subscription.latest_invoice?.payment_intent?.client_secret
+      });
+    } catch (error) {
+      console.error("Subscription error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.post("/api/chat/start", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validatedData = insertChatSessionSchema.parse({
+        userId,
+        country: req.body.country || "any"
+      });
+      const { country } = validatedData;
+      const activeSessions = await storage.getUserActiveSessions(userId);
+      for (const session3 of activeSessions) {
+        await storage.endChatSession(session3.id);
+      }
+      const session2 = await storage.createChatSession({
+        userId,
+        country
+      });
+      userSessions.set(userId, session2.id);
+      const waitingUser = await storage.findWaitingUser(country, userId);
+      if (waitingUser?.userId) {
+        await storage.updateChatSessionPartner(waitingUser.id, userId);
+        await storage.updateChatSessionPartner(session2.id, waitingUser.userId);
+        const partnerWs = connectedUsers.get(waitingUser.userId);
+        const userWs = connectedUsers.get(userId);
+        if (partnerWs && partnerWs.readyState === WebSocket.OPEN) {
+          partnerWs.send(JSON.stringify({
+            type: "match_found",
+            partnerId: userId,
+            sessionId: waitingUser.id
+          }));
+        }
+        if (userWs && userWs.readyState === WebSocket.OPEN) {
+          userWs.send(JSON.stringify({
+            type: "match_found",
+            partnerId: waitingUser.userId,
+            sessionId: session2.id
+          }));
+        }
+      }
+      res.json(session2);
+    } catch (error) {
+      console.error("Chat start error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.post("/api/chat/end", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const sessionId = userSessions.get(userId);
+      if (sessionId) {
+        await storage.endChatSession(sessionId);
+        userSessions.delete(userId);
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Chat end error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.post("/api/users/report", isAuthenticated, async (req, res) => {
+    try {
+      const reporterId = req.user.claims.sub;
+      const report = insertUserReportSchema.parse(req.body);
+      await storage.createUserReport(reporterId, report);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Report error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  const isAdmin = async (req, res, next) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      req.adminUser = user;
+      next();
+    } catch (error) {
+      res.status(500).json({ message: "Error checking admin status" });
+    }
+  };
+  app2.get("/api/admin/users", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { limit = 50, offset = 0 } = req.query;
+      const users2 = await storage.getAllUsers(parseInt(limit), parseInt(offset));
+      res.json(users2);
+    } catch (error) {
+      console.error("Admin users error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.put("/api/admin/users/permissions", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const permissions = updateUserPermissionsSchema.parse(req.body);
+      const updatedUser = await storage.updateUserPermissions(permissions);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Admin permissions error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.get("/api/admin/chat-sessions", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const sessions2 = await storage.getAllActiveChatSessions();
+      res.json(sessions2);
+    } catch (error) {
+      console.error("Admin chat sessions error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.get("/api/admin/reports", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { limit = 50, offset = 0 } = req.query;
+      const reports = await storage.getUserReports(parseInt(limit), parseInt(offset));
+      res.json(reports);
+    } catch (error) {
+      console.error("Admin reports error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.post("/api/admin/ban-user", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { userId, reason, duration } = req.body;
+      const adminId = req.user.claims.sub;
+      await storage.banUser({ userId, reason, duration }, adminId);
+      res.json({ success: true, message: "User banned successfully" });
+    } catch (error) {
+      console.error("Ban user error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.post("/api/admin/unban-user", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const adminId = req.user.claims.sub;
+      await storage.unbanUser(userId, adminId);
+      res.json({ success: true, message: "User unbanned successfully" });
+    } catch (error) {
+      console.error("Unban user error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.get("/api/admin/actions", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { limit = 50, offset = 0 } = req.query;
+      const actions = await storage.getAdminActions(parseInt(limit), parseInt(offset));
+      res.json(actions);
+    } catch (error) {
+      console.error("Admin actions error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.post("/api/admin/review-report", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { reportId, status, adminAction } = req.body;
+      const adminId = req.user.claims.sub;
+      await storage.updateReportStatus(reportId, status, adminAction, adminId);
+      res.json({ success: true, message: "Report reviewed successfully" });
+    } catch (error) {
+      console.error("Review report error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.get("/api/admin/server-stats", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const users2 = await storage.getAllUsers();
+      const activeChatSessions = await storage.getAllActiveChatSessions();
+      const serverPools3 = await storage.getServerPools();
+      const { matchingSystem: matchingSystem2 } = await Promise.resolve().then(() => (init_matchingSystem(), matchingSystem_exports));
+      const queueStats = matchingSystem2.getQueueStats();
+      res.json({
+        totalUsers: users2.length,
+        activeChats: activeChatSessions.length,
+        queueStats,
+        serverPools: serverPools3
+      });
+    } catch (error) {
+      console.error("Server stats error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.post("/api/admin/server-pools", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { region, countries, capacity } = req.body;
+      const pool2 = await storage.createServerPool({ region, countries, capacity });
+      res.json(pool2);
+    } catch (error) {
+      console.error("Create server pool error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.get("/api/stats/online-users", async (req, res) => {
+    try {
+      const onlineCount = connectedUsers.size;
+      res.json({ count: onlineCount });
+    } catch (error) {
+      console.error("Online users count error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app2.post("/api/admin/monitor-session", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { sessionId } = req.body;
+      const adminUserId = req.user.claims.sub;
+      const adminWs = connectedUsers.get(adminUserId);
+      if (adminWs && adminWs.readyState === WebSocket.OPEN) {
+        adminWs.send(JSON.stringify({
+          type: "admin_monitor",
+          sessionId,
+          message: "Admin monitoring enabled for this session"
+        }));
+      }
+      res.json({ success: true, message: "Monitoring session" });
+    } catch (error) {
+      console.error("Admin monitor error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  const httpServer = createServer(app2);
+  const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
+  wss.on("connection", (ws2, req) => {
+    let userId = null;
+    ws2.on("message", (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        switch (data.type) {
+          case "auth":
+            if (data.userId && typeof data.userId === "string") {
+              userId = data.userId;
+              connectedUsers.set(userId, ws2);
+            }
+            break;
+          case "webrtc_offer":
+          case "webrtc_answer":
+          case "webrtc_candidate":
+            if (data.targetUserId && typeof data.targetUserId === "string") {
+              const targetWs = connectedUsers.get(data.targetUserId);
+              if (targetWs && targetWs.readyState === WebSocket.OPEN) {
+                targetWs.send(JSON.stringify({
+                  ...data,
+                  fromUserId: userId
+                }));
+              }
+            }
+            break;
+        }
+      } catch (error) {
+        console.error("WebSocket message error:", error);
+      }
+    });
+    ws2.on("close", () => {
+      if (userId) {
+        connectedUsers.delete(userId);
+        userSessions.delete(userId);
+      }
+    });
+  });
+  return httpServer;
+}
+
+// server/vite.ts
+import express from "express";
+import fs from "fs";
+import path2 from "path";
+import { createServer as createViteServer, createLogger } from "vite";
+
+// vite.config.ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+var vite_config_default = defineConfig({
+  plugins: [
+    react(),
+    runtimeErrorOverlay(),
+    ...process.env.NODE_ENV !== "production" && process.env.REPL_ID !== void 0 ? [
+      await import("@replit/vite-plugin-cartographer").then(
+        (m) => m.cartographer()
+      )
+    ] : []
+  ],
+  resolve: {
+    alias: {
+      "@": path.resolve(import.meta.dirname, "client", "src"),
+      "@shared": path.resolve(import.meta.dirname, "shared"),
+      "@assets": path.resolve(import.meta.dirname, "attached_assets")
+    }
+  },
+  root: path.resolve(import.meta.dirname, "client"),
+  build: {
+    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    emptyOutDir: true
+  },
+  server: {
+    fs: {
+      strict: true,
+      deny: ["**/.*"]
+    }
+  }
+});
+
+// server/vite.ts
+import { nanoid } from "nanoid";
+var viteLogger = createLogger();
+function log(message, source = "express") {
+  const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
+async function setupVite(app2, server) {
+  const serverOptions = {
+    middlewareMode: true,
+    hmr: { server },
+    allowedHosts: true
+  };
+  const vite = await createViteServer({
+    ...vite_config_default,
+    configFile: false,
+    customLogger: {
+      ...viteLogger,
+      error: (msg, options) => {
+        viteLogger.error(msg, options);
+        process.exit(1);
+      }
+    },
+    server: serverOptions,
+    appType: "custom"
+  });
+  app2.use(vite.middlewares);
+  app2.use("*", async (req, res, next) => {
+    const url = req.originalUrl;
+    try {
+      const clientTemplate = path2.resolve(
+        import.meta.dirname,
+        "..",
+        "client",
+        "index.html"
+      );
+      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      template = template.replace(
+        `src="/src/main.tsx"`,
+        `src="/src/main.tsx?v=${nanoid()}"`
+      );
+      const page = await vite.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+    } catch (e) {
+      vite.ssrFixStacktrace(e);
+      next(e);
+    }
+  });
+}
+function serveStatic(app2) {
+  const distPath = path2.resolve(import.meta.dirname, "public");
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
+    );
+  }
+  app2.use(express.static(distPath));
+  app2.use("*", (_req, res) => {
+    res.sendFile(path2.resolve(distPath, "index.html"));
+  });
+}
+
+// server/index.ts
+var app = express2();
+app.use(express2.json());
+app.use(express2.urlencoded({ extended: false }));
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path3 = req.path;
+  let capturedJsonResponse = void 0;
+  const originalResJson = res.json;
+  res.json = function(bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path3.startsWith("/api")) {
+      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      }
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "\u2026";
+      }
+      log(logLine);
+    }
+  });
+  next();
+});
+(async () => {
+  const server = await registerRoutes(app);
+  app.use((err, _req, res, _next) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    res.status(status).json({ message });
+    throw err;
+  });
+  if (app.get("env") === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
+  const port = 5e3;
+  server.listen({
+    port,
+    host: "0.0.0.0",
+    reusePort: true
+  }, () => {
+    log(`serving on port ${port}`);
+  });
+})();
